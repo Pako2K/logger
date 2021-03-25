@@ -49,7 +49,6 @@
 #include <iomanip>
 #include <ctime>
 #include <cstdarg>
-#include <functional>
 #include <array>
 #include <vector>
 #include <memory>
@@ -57,6 +56,8 @@
 #include <thread>
 #include <mutex>
 #include <time.h>
+
+#include <dual_function.h>
 
 
 #ifdef NO_DEBUG_LOG_BUILD
@@ -204,15 +205,14 @@ namespace utils
        
     static void setLogFile(const std::string& fileName, Policy policy, uint8_t maxNumFiles = 0, uintmax_t maxSize = 0);       
 
-    inline static std::function<void(std::string)> debug{ [](std::string trace) {_write(LogLevel::DEBUG, trace); } };
-    inline static std::function<void(std::string)> info{ [](std::string trace) {_write(LogLevel::INFO, trace); } };
-    inline static std::function<void(std::string)> error{ [](std::string trace) {_write(LogLevel::ERROR, trace); } };
+    inline static DualFunction<void(std::string)> debug{ [](std::string trace) {_write(LogLevel::DEBUG, trace); }, [](std::string) {} };
+    inline static DualFunction<void(std::string)> info{ [](std::string trace) {_write(LogLevel::INFO, trace); }, [](std::string) {} };
+    inline static DualFunction<void(std::string)> error{ [](std::string trace) {_write(LogLevel::ERROR, trace); }, [](std::string) {} };
 
-    inline static std::function<std::ostream* ()> getNullStream{ []() { return &_nullStream; } };
+    inline static DualFunction<std::ostream* ()> getDebugStream{ []() { return _getStream(utils::LogLevel::DEBUG); }, []() { return &_nullStream; } };
+    inline static DualFunction<std::ostream* ()> getInfoStream{ []() { return _getStream(LogLevel::INFO); }, []() { return &_nullStream; } };
+    inline static DualFunction<std::ostream* ()> getErrorStream{ []() { return _getStream(LogLevel::ERROR); }, []() { return &_nullStream; } };
 
-    inline static std::function<std::ostream*()> getDebugStream { []() { return _getStream(utils::LogLevel::DEBUG); } };
-    inline static std::function<std::ostream*()> getInfoStream { []() { return _getStream(LogLevel::INFO); } };
-    inline static std::function<std::ostream*()> getErrorStream { []() { return _getStream(LogLevel::ERROR); } };
   }; // END CLASS LOGGER
 
 
@@ -319,36 +319,36 @@ namespace utils
   void Logger::setLevel(LogLevel level) {
     switch (level) {
     case LogLevel::DEBUG:
-      debug = [](std::string trace) {_write(LogLevel::DEBUG, trace); };
-      info = [](std::string trace) {_write(LogLevel::INFO, trace); };
-      error = [](std::string trace) {_write(LogLevel::ERROR, trace); };
-      getDebugStream = []() { return _getStream(LogLevel::DEBUG); };
-      getInfoStream = []() { return _getStream(LogLevel::INFO); };
-      getErrorStream = []() { return _getStream(LogLevel::ERROR); };
+      debug.enableFirst();
+      info.enableFirst();
+      error.enableFirst();
+      getDebugStream.enableFirst();
+      getInfoStream.enableFirst();
+      getErrorStream.enableFirst();
       break;
     case LogLevel::INFO:
-      debug = [](std::string trace) {};
-      info = [](std::string trace) {_write(LogLevel::INFO, trace); };
-      error = [](std::string trace) {_write(LogLevel::ERROR, trace); };
-      getDebugStream = []() { return &_nullStream; };
-      getInfoStream = []() { return _getStream(LogLevel::INFO); };
-      getErrorStream = []() { return _getStream(LogLevel::ERROR); };
+      debug.enableSecond();
+      info.enableFirst();
+      error.enableFirst();
+      getDebugStream.enableSecond();
+      getInfoStream.enableFirst();
+      getErrorStream.enableFirst();
       break;
     case LogLevel::ERROR:
-      debug = [](std::string trace) {};
-      info = [](std::string trace) {};
-      error = [](std::string trace) {_write(LogLevel::ERROR, trace); };
-      getDebugStream = []() { return &_nullStream; };
-      getInfoStream = []() { return &_nullStream; };
-      getErrorStream = []() { return _getStream(LogLevel::ERROR); };
+      debug.enableSecond();
+      info.enableSecond();
+      error.enableFirst();
+      getDebugStream.enableSecond();
+      getInfoStream.enableSecond();
+      getErrorStream.enableFirst();
       break;
     case LogLevel::NONE:
-      debug = [](std::string trace) {};
-      info = [](std::string trace) {};
-      error = [](std::string trace) {};
-      getDebugStream = []() { return &_nullStream; };
-      getInfoStream = []() { return &_nullStream; };
-      getErrorStream = []() { return &_nullStream; };
+      debug.enableSecond();
+      info.enableSecond();
+      error.enableSecond();
+      getDebugStream.enableSecond();
+      getInfoStream.enableSecond();
+      getErrorStream.enableSecond();
     }
   }
 
