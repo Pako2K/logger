@@ -1,5 +1,5 @@
-#ifndef UTILS_LOGGER
-#define UTILS_LOGGER
+#ifndef UTILS_LOGGER_H
+#define UTILS_LOGGER_H
 
 /**
 * Logger Utility
@@ -380,4 +380,4 @@ namespace utils
 }
 
 
-#endif UTILS_LOGGER
+#endif UTILS_LOGGER_H
